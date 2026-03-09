@@ -227,6 +227,52 @@ def get_users():
     users = Admin.query.all()
     return jsonify([user.to_dict() for user in users])
 
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    data = request.json
+    if not data or not data.get('name') or not data.get('password'):
+        return jsonify({"error": "Name and password required"}), 400
+        
+    existing = Admin.query.filter_by(username=data['name']).first()
+    if existing:
+        return jsonify({"error": "Username already exists"}), 400
+        
+    new_user = Admin(
+        username=data['name'],
+        password_hash=generate_password_hash(data['password']),
+        role=data.get('role', 'staff'),
+        permissions=','.join(data.get('permissions', [])) if isinstance(data.get('permissions'), list) else data.get('permissions', '')
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"success": True, "user": new_user.to_dict()}), 201
+
+@app.route('/api/users/<user_id>', methods=['PUT', 'PATCH'])
+def update_user(user_id):
+    if str(user_id).startswith('usr_'):
+        user_id = user_id.replace('usr_', '')
+    user = Admin.query.get_or_404(int(user_id))
+    data = request.json
+    
+    if data.get('password'):
+        user.password_hash = generate_password_hash(data['password'])
+    if 'role' in data:
+        user.role = data['role']
+    if 'permissions' in data:
+        user.permissions = ','.join(data['permissions']) if isinstance(data['permissions'], list) else data['permissions']
+        
+    db.session.commit()
+    return jsonify({"success": True, "user": user.to_dict()}), 200
+
+@app.route('/api/users/<user_id>', methods=['DELETE'])
+def delete_user_api(user_id):
+    if str(user_id).startswith('usr_'):
+        user_id = user_id.replace('usr_', '')
+    user = Admin.query.get_or_404(int(user_id))
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"success": True}), 200
+
 @app.route('/api/login', methods=['POST'])
 def api_login():
     """Authenticate user from React frontend via JSON"""
