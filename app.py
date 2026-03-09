@@ -221,6 +221,14 @@ def api_update_order(order_id):
     db.session.commit()
     return jsonify(order.to_dict()), 200
 
+@app.route('/api/orders/<int:order_id>', methods=['DELETE'])
+def api_delete_order(order_id):
+    """Delete an order"""
+    order = Order.query.get_or_404(order_id)
+    db.session.delete(order)
+    db.session.commit()
+    return jsonify({"success": True}), 200
+
 @app.route('/api/users', methods=['GET'])
 def get_users():
     """Retrieve all users"""
