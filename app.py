@@ -143,36 +143,38 @@ def api_create_order():
     """Create a new order from API / Webhook Simulated / Import"""
     try:
         data = request.json
-        if not data:
-            # Maybe it's a list for Excel Import
-            if isinstance(request.json, list):
-                orders_data = request.json
-                created_orders = []
-                produk = Produk.query.first()
-                if not produk:
-                    return jsonify({"error": "No products available in database"}), 404
-                
-                for item in orders_data:
-                    new_order = Order(
-                        produk_id=produk.id,
-                        jumlah=1,
-                        total_harga=produk.harga,
-                        status=item.get('tracking', {}).get('orderStatus', 'Shipping'),
-                        customer_name=item.get('customer', {}).get('name', 'Imported Row'),
-                        customer_phone=item.get('customer', {}).get('phone', '-'),
-                        address=item.get('address', 'API Address'),
-                        payment_method=item.get('paymentMethod', 'COD'),
-                        courier_name=item.get('courierInfo', {}).get('name', 'Unknown'),
-                        courier_awb=item.get('courierInfo', {}).get('awb', '-'),
-                        cs_token=item.get('csToken', 'Admin'),
-                        monitoring_category=item.get('tracking', {}).get('statusCategory', 'Aman')
-                    )
-                    db.session.add(new_order)
-                    db.session.flush() # To get ID for response
-                    created_orders.append(new_order.to_dict())
-                
-                db.session.commit()
-                return jsonify({"success": True, "count": len(created_orders), "orders": created_orders}), 201
+        if data is None:
+            return jsonify({"error": "No JSON payload provided"}), 400
+            
+        # Maybe it's a list for Excel Import
+        if isinstance(data, list):
+            orders_data = data
+            created_orders = []
+            produk = Produk.query.first()
+            if not produk:
+                return jsonify({"error": "No products available in database"}), 404
+            
+            for item in orders_data:
+                new_order = Order(
+                    produk_id=produk.id,
+                    jumlah=1,
+                    total_harga=produk.harga,
+                    status=item.get('tracking', {}).get('orderStatus', 'Shipping'),
+                    customer_name=item.get('customer', {}).get('name', 'Imported Row'),
+                    customer_phone=item.get('customer', {}).get('phone', '-'),
+                    address=item.get('address', 'API Address'),
+                    payment_method=item.get('paymentMethod', 'COD'),
+                    courier_name=item.get('courierInfo', {}).get('name', 'Unknown'),
+                    courier_awb=item.get('courierInfo', {}).get('awb', '-'),
+                    cs_token=item.get('csToken', 'Admin'),
+                    monitoring_category=item.get('tracking', {}).get('statusCategory', 'Aman')
+                )
+                db.session.add(new_order)
+                db.session.flush() # To get ID for response
+                created_orders.append(new_order.to_dict())
+            
+            db.session.commit()
+            return jsonify({"success": True, "count": len(created_orders), "orders": created_orders}), 201
 
         # Single creation
         produk = Produk.query.first()
