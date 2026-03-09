@@ -121,6 +121,15 @@ def init_db():
 
 init_db()
 
+@app.route('/api/init-db', methods=['GET', 'POST'])
+def force_init_db():
+    """Endpoint to explicitly trigger database initialization (useful for cloud setup)"""
+    try:
+        init_db()
+        return jsonify({"success": True, "message": "Database initialized and seeded successfully!"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # --- JSON API ENDPOINTS FOR REACT FRONTEND ---
 
 @app.route('/api/orders', methods=['GET'])
