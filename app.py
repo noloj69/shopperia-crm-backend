@@ -229,6 +229,22 @@ def api_delete_order(order_id):
     db.session.commit()
     return jsonify({"success": True}), 200
 
+@app.route('/api/orders/bulk-delete', methods=['POST'])
+def api_bulk_delete_orders():
+    """Bulk delete orders"""
+    data = request.json
+    db_ids = data.get('db_ids', [])
+    if not db_ids:
+        return jsonify({"error": "No IDs provided"}), 400
+        
+    try:
+        Order.query.filter(Order.id.in_(db_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/users', methods=['GET'])
 def get_users():
     """Retrieve all users"""
