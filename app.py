@@ -154,6 +154,7 @@ def api_create_order():
             if not produk:
                 return jsonify({"error": "No products available in database"}), 404
             
+            orders_to_add = []
             for item in orders_data:
                 new_order = Order(
                     produk_id=produk.id,
@@ -169,11 +170,14 @@ def api_create_order():
                     cs_token=item.get('csToken', 'Admin'),
                     monitoring_category=item.get('tracking', {}).get('statusCategory', 'Aman')
                 )
-                db.session.add(new_order)
-                db.session.flush() # To get ID for response
-                created_orders.append(new_order.to_dict())
+                orders_to_add.append(new_order)
             
+            db.session.add_all(orders_to_add)
             db.session.commit()
+            
+            for o in orders_to_add:
+                created_orders.append(o.to_dict())
+            
             return jsonify({"success": True, "count": len(created_orders), "orders": created_orders}), 201
 
         # Single creation
