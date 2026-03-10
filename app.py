@@ -172,7 +172,7 @@ def api_create_order():
                     total_c = produk.harga
 
                 new_order = Order(
-                    order_number=item.get('id'), # we'll pass 'id' from react
+                    order_number=str(item.get('id')) if item.get('id') is not None else None, # we'll pass 'id' from react
                     produk_id=produk.id,
                     jumlah=1,
                     total_harga=total_c,
@@ -215,7 +215,7 @@ def api_create_order():
             total_c = produk.harga
 
         new_order = Order(
-            order_number=data.get('id'),
+            order_number=str(data.get('id')) if data.get('id') is not None else None,
             produk_id=produk.id,
             jumlah=1,
             total_harga=total_c,
