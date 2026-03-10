@@ -38,6 +38,7 @@ class Produk(db.Model):
 class Order(db.Model):
     __tablename__ = 'order'
     id = db.Column(db.Integer, primary_key=True)
+    order_number = db.Column(db.String(50), nullable=True) # Mapped from ID Pesanan/Number Order
     produk_id = db.Column(db.Integer, db.ForeignKey('produk.id'), nullable=False)
     jumlah = db.Column(db.Integer, nullable=False)
     total_harga = db.Column(db.Float, nullable=False)
@@ -60,7 +61,7 @@ class Order(db.Model):
     def to_dict(self):
         # Format required by the React Frontend
         return {
-            'id': f"ORD-{self.id:04d}",
+            'id': self.order_number if self.order_number else f"ORD-{self.id:04d}",
             'db_id': self.id,
             'date': self.created_at.isoformat() if self.created_at else datetime.utcnow().isoformat(),
             'customer': {
@@ -156,10 +157,26 @@ def api_create_order():
             
             orders_to_add = []
             for item in orders_data:
+                # Handle dates
+                dt = datetime.utcnow()
+                if item.get('date'):
+                    try:
+                        dt = datetime.fromisoformat(item.get('date').replace('Z', '+00:00'))
+                    except ValueError:
+                        pass
+                
+                # Handle total cost parsing (might be string like "150000" or int)
+                try:
+                    total_c = float(item.get('totalCost', produk.harga))
+                except (ValueError, TypeError):
+                    total_c = produk.harga
+
                 new_order = Order(
+                    order_number=item.get('id'), # we'll pass 'id' from react
                     produk_id=produk.id,
                     jumlah=1,
-                    total_harga=produk.harga,
+                    total_harga=total_c,
+                    created_at=dt,
                     status=item.get('tracking', {}).get('orderStatus', 'Shipping'),
                     customer_name=item.get('customer', {}).get('name', 'Imported Row'),
                     customer_phone=item.get('customer', {}).get('phone', '-'),
@@ -185,10 +202,24 @@ def api_create_order():
         if not produk:
             return jsonify({"error": "No products available in database"}), 404
             
+        dt = datetime.utcnow()
+        if data.get('date'):
+            try:
+                dt = datetime.fromisoformat(data.get('date').replace('Z', '+00:00'))
+            except ValueError:
+                pass
+
+        try:
+            total_c = float(data.get('totalCost', produk.harga))
+        except (ValueError, TypeError):
+            total_c = produk.harga
+
         new_order = Order(
+            order_number=data.get('id'),
             produk_id=produk.id,
             jumlah=1,
-            total_harga=produk.harga,
+            total_harga=total_c,
+            created_at=dt,
             status=data.get('tracking', {}).get('orderStatus', 'Shipping'),
             customer_name=data.get('customer', {}).get('name', 'API User'),
             customer_phone=data.get('customer', {}).get('phone', '-'),
