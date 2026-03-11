@@ -131,6 +131,19 @@ def force_init_db():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/migrate-db', methods=['GET', 'POST'])
+def migrate_db():
+    """Endpoint to run ALTER TABLE schema migrations for PostgreSQL on Render"""
+    try:
+        from sqlalchemy import text
+        # Ignore errors if column already exists
+        db.session.execute(text('ALTER TABLE "order" ADD COLUMN order_number VARCHAR(50);'))
+        db.session.commit()
+        return jsonify({"success": True, "message": "Migration completed successfully!"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # --- JSON API ENDPOINTS FOR REACT FRONTEND ---
 
 @app.route('/api/orders', methods=['GET'])
