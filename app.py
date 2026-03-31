@@ -263,6 +263,9 @@ def api_update_order(order_id):
         order.monitoring_category = data['statusCategory']
     if 'orderStatus' in data:
         order.status = data['orderStatus']
+
+    if 'paymentMethod' in data:
+        order.payment_method = data['paymentMethod']
     if 'kurirPhone' in data:
         order.kurir_phone = data['kurirPhone']
         
@@ -274,6 +277,26 @@ def api_delete_order(order_id):
     """Delete an order"""
     order = Order.query.get_or_404(order_id)
     db.session.delete(order)
+    db.session.commit()
+    return jsonify({"success": True}), 200
+
+
+@app.route('/api/orders/bulk-update', methods=['POST'])
+def api_bulk_update_orders():
+    data = request.json
+    db_ids = data.get('db_ids', [])
+    if not db_ids:
+        return jsonify({'error': 'No ids provided'}), 400
+        
+    orders = Order.query.filter(Order.id.in_(db_ids)).all()
+    for order in orders:
+        if 'statusCategory' in data:
+            order.monitoring_category = data['statusCategory']
+        if 'orderStatus' in data:
+            order.status = data['orderStatus']
+        if 'paymentMethod' in data:
+            order.payment_method = data['paymentMethod']
+            
     db.session.commit()
     return jsonify({"success": True}), 200
 
@@ -489,4 +512,4 @@ def admin_dashboard():
     return render_template('admin.html', produk_list=produk_list, order_list=orders_data)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)
